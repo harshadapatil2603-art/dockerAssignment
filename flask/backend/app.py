@@ -1,68 +1,45 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
+from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
-import pymongo
-import json
 
 load_dotenv()
 
-MONGO_URI = os.getenv("MONGO_URI")
-
-print(MONGO_URI)
-
-client = pymongo.MongoClient(MONGO_URI)
-
-try:
-    client.admin.command('ping')
-    print("MongoDB Connected Successfully!")
-except Exception as e:
-    print("MongoDB Connection Failed:", e)
-
-db = client.test
-
-collection = db["flask-tutorial"]
-
 app = Flask(__name__)
+CORS(app)
 
+client = MongoClient(os.getenv("MONGO_URI"))
 
-@app.route('/submit', methods=['POST'])
+db = client[os.getenv("DB_NAME")]
+collection = db[os.getenv("COLLECTION")]
+
+@app.route("/submit", methods=["POST"])
 def submit():
-    
-    form_data = dict(request.json)
 
-    collection.insert_one(form_data)
+    try:
 
-    return 'Data submitted successfully!'
+        data = request.json
 
-@app.route('/view')
-def view():
+        document = {
+            "itemName": data["itemName"],
+            "itemDescription": data["itemDescription"]
+        }
 
-    data = collection.find()
+        collection.insert_one(document)
 
-    data = list(data)
+        return jsonify({
+            "success": True,
+            "message": "Data submitted successfully"
+        })
 
-    for item in data:
+    except Exception as e:
 
-        print(item)
-        del item['_id']
-
-    data = {
-        'data': data
-    }  
-
-    return jsonify(data)
-
-@app.route('/api', methods=['GET'])
-def get_data():
-
-    with open('data.json', 'r') as file:
-        data = json.load(file)
-
-    return jsonify(data)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9000, debug=True)
-    
-      
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }),500
 
 
+if __name__=="__main__":
+    app.run(host="0.0.0.0",port=5000)
