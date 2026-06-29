@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+
+  backend:
+
+    build: ./backend
+
+    container_name: flask_backend
+
+    ports:
+      - "5000:5000"
+
+    env_file:
+      - ./backend/.env
+
+    networks:
+      - todo-network
+
+  frontend:
+
+    build: ./frontend
+
+    container_name: express_frontend
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      BACKEND_URL: http://backend:5000
+
+    depends_on:
+      - backend
+
+    networks:
+      - todo-network
+
+networks:
+
+  todo-network:
